@@ -1,7 +1,7 @@
 
 # GAN(生成式对抗网络)
 
-[Github地址](http://)
+[Github地址](https://github.com/zhoubaohang/deep-learning-notes/tree/master/Deep%20Neural%20Network)
 
 参考：
 [生成式对抗网络（Generative Adversarial Networks，GANs）](https://blog.csdn.net/u010089444/article/details/78946039)
@@ -49,6 +49,80 @@ $$
 ![png](algorithm.png)
 
 - 算法流程截取自论文原文，详细描述了训练GAN的过程。
-- 
+- 网络的训练方法采用反向传播，一次iteration中，先训练**判别网络**，再训练**生成网络**。
+- 由于要最大化**D**的目标函数，所以采用梯度上升。不过，实际实现中往往在该目标函数前加上负号，从而统一使用梯度下降。
 
 ## 实验部分
+
+- 实验部分只是将MNIST作为输入，未加入条件信息。所以最终的输出结果不一定为‘3’，也可能为上面的‘0’.
+
+```python
+# 导入必备的库
+import os
+
+os.chdir('../')
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mnist_loader import load_data
+from nn.layers import Dense
+from nn.utils import Activation, Droupout
+from nn.gan import GAN, Generator, Discriminator
+```
+
+
+```python
+# 加载 MNIST 训练数据
+(train_X,_), _, _ = load_data()
+
+# 将 训练数据从[0,1]范围转换到[-1,1]
+train_X = train_X * 2. - 1.
+```
+
+
+```python
+# 添加生成器
+generator = Generator(layers=[Dense(256),
+                              Activation('relu', leaky_rate=0.01),
+                              Dense(784),
+                              Activation('tanh')])
+# 添加判别器
+discriminator = Discriminator(layers=[Dense(64),
+                                      Activation('relu', leaky_rate=0.01),
+                                      Dense(1),
+                                      Activation('sigmoid')])
+
+# 实例化网络
+gan = GAN(generator, discriminator, lr=0.01, decay_rate=1e-4)
+```
+
+
+```python
+# 训练网络
+gan.train(train_X, epoch=100, k=1, mini_batch_size=100)
+```
+
+    epoch 1/100:[##################################################]100.00% 	loss_g 0.658039	loss_d 0.764890
+	//省略部分
+    epoch 100/100:[##################################################]100.00% 	loss_g 0.689197	loss_d 0.712495
+
+
+![png](output_4_1.png)
+
+
+- PS: 上面的为损失函数曲线，蓝色为判别网络的损失曲线，黄色为生成网络的损失曲线。
+
+
+```python
+# 生成测试图像
+test_x = np.random.uniform(-1,1,size=(100,1))
+img = gan.generate(test_x)
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+ax.imshow(img.reshape((28,28)), cmap='gray')
+ax.axis('off')
+```
+
+![png](output_6_1.png)
+
+- 上图为 随机向量作为输入，经过生成器输出的图片结果。已经可以很明显的看出为：3，GAN的作用已经显现出来了。

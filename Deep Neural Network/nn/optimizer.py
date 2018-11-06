@@ -33,7 +33,7 @@ class RMSProp(object):
         
         self.sw = self.beta * self.sw + (1. - self.beta) * dW**2
         self.sb = self.beta * self.sb + (1. - self.beta) * db**2
-        return (self.sw, self.sb)
+        return (dW/np.sqrt(self.sw + 1e-6), db/np.sqrt(self.sb + 1e-6))
 
 class Adam(object):
     
@@ -48,7 +48,8 @@ class Adam(object):
     def getWeight(self, dW, db, t):
         
         vw, vb = self.momentom.getWeight(dW, db)
-        sw, sb = self.rmsprop.getWeight(dW, db)
+        u_sw, u_sb = self.rmsprop.getWeight(dW, db)
+        sw, sb = (dW/u_sw)**2, (db/u_sb)**2
         
         vw_correct = vw / (1. - self.beta1**t)
         vb_correct = vb / (1. - self.beta1**t)

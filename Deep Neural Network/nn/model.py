@@ -8,8 +8,9 @@ Created on Sat Sep 22 20:33:48 2018
 import numpy as np
 import matplotlib.pyplot as plt
 from .progressbar import ProgressBar
-from .layers import Conv2DLayer, Dense
+from .loss_func import LossFunction
 from .utils import BatchNormalization
+from .layers import Conv2DLayer, Dense
 
 class Model(object):
     """
@@ -43,8 +44,9 @@ class Model(object):
 
 class Sequence(Model):
     
-    def __init__(self, training_data, input_dim, layers=[], \
-                       optimizer='adam', learning_rate=0.009, decay_rate=0):
+    def __init__(self, training_data, input_dim=(1,1), layers=[], \
+                       optimizer='adam', learning_rate=0.009, decay_rate=0,\
+                       loss_func='mean_abs_error'):
         
         self.layers = layers
         self.M, self.N = input_dim
@@ -52,6 +54,7 @@ class Sequence(Model):
         self.decay_rate = decay_rate
         self.training_data = training_data
         self.learning_rate = learning_rate
+        self.lossFunction = LossFunction(loss_func)
     
     def add(self, layer):
         
@@ -80,11 +83,12 @@ class Sequence(Model):
                 delta = layer.backward(delta, t)
             else:
                 delta = layer.backward(delta)
+        return delta
     
-    def loss(self, _y, y):
-        
-        m = y.shape[1]
-        return np.sum(np.abs(y - _y)) / (2 * m)
+#    def loss(self, _y, y):
+#        
+#        m = y.shape[1]
+#        return np.sum(np.abs(y - _y)) / (2 * m)
 
     def generateTrainingData(self, batch_size, start=0):
 
@@ -113,7 +117,7 @@ class Sequence(Model):
                 X, _y = self.generateTrainingData(batch_size, start=j*batch_size)
                 y = self.forward(X)
                 cost = y - _y
-                loss = self.loss(_y, y)
+                loss = self.lossFunction.getLoss(_y, y) #self.loss(_y, y)
                 y = self.softmax2ones(y)
 
                 sum_correct += np.sum(y * _y)
@@ -150,7 +154,7 @@ class Sequence(Model):
                 X, _y = self.generateTrainingData(1, j)
                 y = self.forward(X)
                 cost = y - _y
-                loss = self.loss(_y, y)
+                loss = self.lossFunction.getLoss(_y, y) #self.loss(_y, y)
                 y = self.softmax2ones(y)
 
                 sum_correct += np.sum(y * _y)

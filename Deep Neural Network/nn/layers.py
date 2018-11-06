@@ -57,6 +57,8 @@ class Dense(Layer):
     def __init__(self, output_dim, learning_rate=0.1, beta1=0.9, beta2=0.999, epsilon=1e-8):
         # weight matrix
         self.W = None
+        # weight matrix
+        self.W_cache = []
         # bias matrix
         self.b = None
         # hyper parameter (momentom)
@@ -69,6 +71,7 @@ class Dense(Layer):
         self.output_dim = output_dim
         # hyper parameter (learning rate)
         self.learning_rate = learning_rate
+        self.A_prev_cache = []
         
     def forward(self, A_prev, optimizer='adam'):
         
@@ -82,30 +85,39 @@ class Dense(Layer):
             shape_vb = (self.output_dim, 1)
             # initialize optimizer
             self.optimizer = self.getOptimizer(shape_vw, shape_vb, optimizer)
+        # delta W
+        self.dW = np.zeros((self.output_dim, n))
+        # delta b
+        self.db = np.zeros((self.output_dim, 1))
         # Z = W*X + b
         Z = self.W.dot(A_prev) + self.b
         
         assert(Z.shape == (self.output_dim, m))
         # save the activation value from the post layer
-        self.A_prev = A_prev
+        self.A_prev_cache.append(A_prev)
+        self.W_cache.append(self.W.copy())
         return Z
     
     def backward(self, dZ, t=1):
 
         # get the samples number
         m = dZ.shape[1]
+        W = self.W_cache.pop()
+        A_prev = self.A_prev_cache.pop()
         # get the error of the post layer
-        delta = self.W.T.dot(dZ)
+        delta = W.T.dot(dZ)
         # get the error of the weights
-        dW = dZ.dot(self.A_prev.T) / m
+        dW = dZ.dot(A_prev.T) / m
         # get the error of the bias
         db = np.sum(dZ, axis=1, keepdims=True) / m
-        # get the delta weights and bias corrected by the optimizer
-        vw, vb = self.optimizer.getWeight(dW, db, t)
-        # update the weights and bias
-        self.W -= self.learning_rate * vw
-        self.b -= self.learning_rate * vb
-
+        self.dW += dW
+        self.db += db
+        if not (len(self.W_cache) and len(self.A_prev_cache)):
+            # get the delta weights and bias corrected by the optimizer
+            vw, vb = self.optimizer.getWeight(self.dW, self.db, t)
+            # update the weights and bias
+            self.W -= self.learning_rate * vw
+            self.b -= self.learning_rate * vb
         return delta
         
 class Pool2DLayer(object):

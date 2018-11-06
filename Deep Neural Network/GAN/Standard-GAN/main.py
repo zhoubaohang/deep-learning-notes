@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 
-os.chdir('../')
+os.chdir('../../')
 
 import numpy as np
 import matplotlib.pyplot as plt

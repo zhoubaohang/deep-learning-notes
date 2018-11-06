@@ -8,7 +8,7 @@ import sys
 
 class ProgressBar(object):
 
-    def __init__(self, title='Process', width=50, symbol='#', max_steps=100):
+    def __init__(self, title='Process', width=50, symbol='=', max_steps=100):
         
         self.info = ''
         # self.cache = []

@@ -82,7 +82,7 @@ iteration = data_size // batch_size
 KD = 1
 KG = 1
 epoch = 300
-for i in range(1+add, epoch+add+1):
+for i in range(1, epoch+1):
     
     loss_gs = []
     loss_ds = []
